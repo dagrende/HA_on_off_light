@@ -19,6 +19,7 @@
 #include "nvs_flash.h"
 #include "ha/esp_zigbee_ha_standard.h"
 #include "esp_zb_light.h"
+#include "driver/gpio.h"
 
 #if !defined ZB_ED_ROLE
 #error Define ZB_ED_ROLE in idf.py menuconfig to compile light (End Device) source code.
@@ -91,7 +92,8 @@ static esp_err_t zb_attribute_handler(const esp_zb_zcl_set_attr_value_message_t 
             if (message->attribute.id == ESP_ZB_ZCL_ATTR_ON_OFF_ON_OFF_ID && message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_BOOL) {
                 light_state = message->attribute.data.value ? *(bool *)message->attribute.data.value : light_state;
                 ESP_LOGI(TAG, "Light sets to %s", light_state ? "On" : "Off");
-                light_driver_set_power(light_state);
+                // light_driver_set_power(light_state);
+                gpio_set_level(GPIO_NUM_15, !light_state);
             }
         }
     }
@@ -134,6 +136,9 @@ void app_main(void)
     };
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_zb_platform_config(&config));
-    light_driver_init(LIGHT_DEFAULT_OFF);
+    // light_driver_init(LIGHT_DEFAULT_OFF);
+    gpio_set_direction(GPIO_NUM_15, GPIO_MODE_OUTPUT_OD);
+    gpio_set_level(GPIO_NUM_15, 1);
+
     xTaskCreate(esp_zb_task, "Zigbee_main", 4096, NULL, 5, NULL);
 }
